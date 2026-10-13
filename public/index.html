@@ -66,7 +66,7 @@
     }
 
     h1 {
-      margin: 0 0 18px;
+      margin: 0;
       color: #ff7900;
       font-size: clamp(2.2rem, 7vw, 5.4rem);
       line-height: 0.98;
@@ -83,69 +83,6 @@
       to   { opacity: 0; }
     }
 
-    /* Campo volutamente minuscolo, come richiesto. */
-    #keyword {
-      display: block;
-      width: 46px;
-      height: 15px;
-      padding: 0 2px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 2px;
-      outline: none;
-      background: rgba(0, 0, 0, 0.18);
-      color: rgba(255, 255, 255, 0.28);
-      font: 8px Arial, sans-serif;
-      text-align: center;
-    }
-
-    #keyword:focus {
-      border-color: rgba(255, 145, 45, 0.8);
-      color: #fff;
-      background: rgba(0, 0, 0, 0.72);
-    }
-
-    #countdown {
-      margin: 17px 0 14px;
-      color: #fff;
-      font-size: clamp(0.95rem, 2.5vw, 1.25rem);
-      text-shadow: 0 2px 5px #000;
-    }
-
-    #exitButton {
-      min-width: 190px;
-      padding: 12px 18px;
-      border: 0;
-      border-radius: 5px;
-      font-size: 0.95rem;
-      font-weight: 800;
-      letter-spacing: 0.03em;
-      transition: background-color 160ms ease, transform 160ms ease;
-    }
-
-    #exitButton:disabled {
-      color: #777;
-      background: #393939;
-      cursor: not-allowed;
-      opacity: 0.9;
-    }
-
-    #exitButton:not(:disabled) {
-      color: #111;
-      background: #ff7900;
-      cursor: pointer;
-    }
-
-    #exitButton:not(:disabled):hover {
-      background: #ff9638;
-      transform: translateY(-1px);
-    }
-
-    #status {
-      min-height: 1.2em;
-      margin: 10px 0 0;
-      color: rgba(255, 255, 255, 0.78);
-      font-size: 0.8rem;
-    }
 
     .audio-hint {
       position: fixed;
@@ -179,13 +116,8 @@
 
   <main class="panel">
     <h1>SEI STATO<br>RICKROLLATO!</h1>
-    <label for="keyword" style="position:absolute;left:-10000px">Parola chiave</label>
-    <input id="keyword" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Parola chiave">
-    <p id="countdown" aria-live="polite">Puoi uscire tra: 30 secondi</p>
-    <button id="exitButton" type="button" disabled>ESCI DALLA PAGINA</button>
-    <p id="status" aria-live="polite"></p>
   </main>
-  <p class="audio-hint" id="audioHint" aria-live="polite">
+  <p class="audio-hint" id="audioHint" aria-live="polite" hidden>
     Il video parte senza audio per le restrizioni del browser. Fai clic o premi un tasto per attivare l'audio.
     <span id="videoFallback" hidden> Se non si carica, <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener noreferrer">apri il video su YouTube</a>.</span>
   </p>
@@ -205,6 +137,7 @@
       function showVideoError(message) {
         if (youtubeFailed) return;
         youtubeFailed = true;
+        audioHint.hidden = false;
         audioHint.firstChild.textContent = message + ' ';
         videoFallback.hidden = false;
       }
@@ -217,6 +150,7 @@
           youtubePlayer.setVolume(100);
           youtubePlayer.playVideo();
           audioActivated = true;
+          audioHint.hidden = true;
         } catch (_) {
           // Il browser può negare l'audio; il video resta utilizzabile in muto.
         }
@@ -259,13 +193,11 @@
                 onStateChange: (event) => {
                   if (event.data === YT.PlayerState.PLAYING) {
                     playbackStarted = true;
-                    if (audioActivated) audioHint.hidden = true;
-                    else {
-                      audioHint.firstChild.textContent = 'Video in riproduzione senza audio. Fai clic o premi un tasto per attivare l’audio. ';
-                    }
+                    audioHint.hidden = true;
                   }
                 },
                 onAutoplayBlocked: () => {
+                  audioHint.hidden = false;
                   audioHint.firstChild.textContent = 'Il browser ha bloccato l’autoplay. Fai clic sulla pagina per avviare il video. ';
                   videoFallback.hidden = false;
                 },
@@ -299,59 +231,6 @@
         }, 12000);
       }
 
-      const keywordInput = document.getElementById('keyword');
-      const countdownText = document.getElementById('countdown');
-      const exitButton = document.getElementById('exitButton');
-      const statusText = document.getElementById('status');
-
-      let secondsLeft = 30;
-      let timerExpired = false;
-      let exitByButton = false;
-
-      const keywordIsCorrect = () => keywordInput.value.trim().toLowerCase() === 'rickroll';
-
-      function updateUnlockState() {
-        // Sblocco richiesto: timer terminato OPPURE parola chiave corretta.
-        const unlocked = timerExpired || keywordIsCorrect();
-        exitButton.disabled = !unlocked;
-
-        if (unlocked) {
-          statusText.textContent = 'Pulsante sbloccato.';
-        } else {
-          statusText.textContent = '';
-        }
-      }
-
-      keywordInput.addEventListener('input', updateUnlockState);
-
-      const countdownInterval = window.setInterval(() => {
-        if (secondsLeft > 0) secondsLeft -= 1;
-        countdownText.textContent = `Puoi uscire tra: ${secondsLeft} second${secondsLeft === 1 ? 'o' : 'i'}`;
-
-        if (secondsLeft <= 0) {
-          timerExpired = true;
-          window.clearInterval(countdownInterval);
-        }
-        updateUnlockState();
-      }, 1000);
-
-      exitButton.addEventListener('click', () => {
-        if (exitButton.disabled) return;
-        exitByButton = true;
-        window.location.href = 'https://www.google.com/';
-      });
-
-      // I browser moderni mostrano il proprio avviso standard: la pagina non può
-      // impedire in modo assoluto all'utente di chiudere la scheda.
-      window.addEventListener('beforeunload', (event) => {
-        if (exitByButton) return;
-
-        // Avviso finché timer e parola chiave non sono entrambi completati.
-        if (!timerExpired || !keywordIsCorrect()) {
-          event.preventDefault();
-          event.returnValue = '';
-        }
-      });
     })();
   </script>
 </body>
