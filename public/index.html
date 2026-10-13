@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Sei stato Rickrollato!</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* Video YouTube a schermo intero, usato come sfondo. */
+    .video-background {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background: #000;
+    }
+
+    .video-background iframe {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 177.78vh;
+      height: 100vh;
+      min-width: 100vw;
+      min-height: 56.25vw;
+      transform: translate(-50%, -50%);
+      border: 0;
+    }
+
+    .shade {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background: rgba(0, 0, 0, 0.38);
+    }
+
+    .panel {
+      position: relative;
+      z-index: 2;
+      width: min(94vw, 1000px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: rgba(10, 10, 10, 0.46);
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      color: #ff7900;
+      font-size: clamp(2.2rem, 7vw, 5.4rem);
+      line-height: 0.98;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      text-shadow: 0 3px 18px rgba(0, 0, 0, 0.9);
+      animation: titleFade 1.4s ease-in 3s forwards;
+      will-change: opacity;
+    }
+
+    /* Il titolo resta visibile 3 secondi, poi svanisce in modo graduale. */
+    @keyframes titleFade {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    /* Campo volutamente minuscolo, come richiesto. */
+    #keyword {
+      display: block;
+      width: 46px;
+      height: 15px;
+      padding: 0 2px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+      outline: none;
+      background: rgba(0, 0, 0, 0.18);
+      color: rgba(255, 255, 255, 0.28);
+      font: 8px Arial, sans-serif;
+      text-align: center;
+    }
+
+    #keyword:focus {
+      border-color: rgba(255, 145, 45, 0.8);
+      color: #fff;
+      background: rgba(0, 0, 0, 0.72);
+    }
+
+    #countdown {
+      margin: 17px 0 14px;
+      color: #fff;
+      font-size: clamp(0.95rem, 2.5vw, 1.25rem);
+      text-shadow: 0 2px 5px #000;
+    }
+
+    #exitButton {
+      min-width: 190px;
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 5px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      transition: background-color 160ms ease, transform 160ms ease;
+    }
+
+    #exitButton:disabled {
+      color: #777;
+      background: #393939;
+      cursor: not-allowed;
+      opacity: 0.9;
+    }
+
+    #exitButton:not(:disabled) {
+      color: #111;
+      background: #ff7900;
+      cursor: pointer;
+    }
+
+    #exitButton:not(:disabled):hover {
+      background: #ff9638;
+      transform: translateY(-1px);
+    }
+
+    #status {
+      min-height: 1.2em;
+      margin: 10px 0 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.8rem;
+    }
+
+    .audio-hint {
+      position: fixed;
+      z-index: 3;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 12px;
+      text-align: center;
+      text-shadow: 0 1px 4px #000;
+    }
+
+    .audio-hint a { color: #ffb36f; }
+
+    @media (max-width: 480px) {
+      .panel { padding-inline: 12px; }
+      h1 { letter-spacing: -0.03em; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      h1 { animation-duration: 0.01ms; animation-delay: 3s; }
+    }
+  </style>
+</head>
+<body>
+  <div class="video-background" aria-hidden="true">
+    <div id="youtubeBackground" role="presentation" aria-label="Video musicale di sfondo"></div>
+  </div>
+  <div class="shade" aria-hidden="true"></div>
+
+  <main class="panel">
+    <h1>SEI STATO<br>RICKROLLATO!</h1>
+    <label for="keyword" style="position:absolute;left:-10000px">Parola chiave</label>
+    <input id="keyword" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Parola chiave">
+    <p id="countdown" aria-live="polite">Puoi uscire tra: 30 secondi</p>
+    <button id="exitButton" type="button" disabled>ESCI DALLA PAGINA</button>
+    <p id="status" aria-live="polite"></p>
+  </main>
+  <p class="audio-hint" id="audioHint" aria-live="polite">
+    Il video parte senza audio per le restrizioni del browser. Fai clic o premi un tasto per attivare l'audio.
+    <span id="videoFallback" hidden> Se non si carica, <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener noreferrer">apri il video su YouTube</a>.</span>
+  </p>
+
+  <script>
+    (() => {
+      const audioHint = document.getElementById('audioHint');
+      const videoFallback = document.getElementById('videoFallback');
+      const videoId = 'dQw4w9WgXcQ';
+      let youtubePlayer = null;
+      let audioActivated = false;
+      let youtubeReady = false;
+      let playbackStarted = false;
+      let youtubeFailed = false;
+      let userInteracted = false;
+
+      function showVideoError(message) {
+        if (youtubeFailed) return;
+        youtubeFailed = true;
+        audioHint.firstChild.textContent = message + ' ';
+        videoFallback.hidden = false;
+      }
+
+      function activateAudio() {
+        userInteracted = true;
+        if (!youtubeReady || !youtubePlayer || audioActivated) return;
+        try {
+          youtubePlayer.unMute();
+          youtubePlayer.setVolume(100);
+          youtubePlayer.playVideo();
+          audioActivated = true;
+        } catch (_) {
+          // Il browser può negare l'audio; il video resta utilizzabile in muto.
+        }
+      }
+
+      document.addEventListener('pointerdown', activateAudio);
+      document.addEventListener('keydown', activateAudio);
+
+      if (window.location.protocol === 'file:') {
+        showVideoError('Non aprire il file con doppio clic. Avvia AVVIA_LOCALHOST.bat e apri l’indirizzo mostrato nel terminale (porta iniziale 10000).');
+      } else {
+        // Usa un DIV come contenitore: la IFrame API crea l'iframe con i parametri
+        // corretti fin dall'inizio (evita di caricare prima un iframe separato).
+        window.onYouTubeIframeAPIReady = () => {
+          try {
+            youtubePlayer = new YT.Player('youtubeBackground', {
+              width: '100%',
+              height: '100%',
+              videoId,
+              playerVars: {
+                autoplay: 1,
+                controls: 0,
+                disablekb: 1,
+                fs: 0,
+                playsinline: 1,
+                rel: 0,
+                loop: 1,
+                playlist: videoId,
+                enablejsapi: 1,
+                origin: window.location.origin
+              },
+              events: {
+                onReady: (event) => {
+                  youtubeReady = true;
+                  event.target.mute();
+                  event.target.setVolume(0);
+                  event.target.playVideo();
+                  if (userInteracted) activateAudio();
+                },
+                onStateChange: (event) => {
+                  if (event.data === YT.PlayerState.PLAYING) {
+                    playbackStarted = true;
+                    if (audioActivated) audioHint.hidden = true;
+                    else {
+                      audioHint.firstChild.textContent = 'Video in riproduzione senza audio. Fai clic o premi un tasto per attivare l’audio. ';
+                    }
+                  }
+                },
+                onAutoplayBlocked: () => {
+                  audioHint.firstChild.textContent = 'Il browser ha bloccato l’autoplay. Fai clic sulla pagina per avviare il video. ';
+                  videoFallback.hidden = false;
+                },
+                onError: (event) => {
+                  if (event.data === 153) {
+                    showVideoError('YouTube segnala errore 153: manca il Referer HTTP. Prova localhost o HTTPS e verifica che un’estensione non blocchi il referrer.');
+                  } else if (event.data === 101 || event.data === 150) {
+                    showVideoError('Il proprietario del video non consente la riproduzione incorporata.');
+                  } else {
+                    showVideoError('YouTube non è riuscito a caricare il video (codice ' + event.data + ').');
+                  }
+                }
+              }
+            });
+          } catch (_) {
+            showVideoError('Impossibile inizializzare il lettore YouTube. Apri il video direttamente su YouTube.');
+          }
+        };
+
+        const apiScript = document.createElement('script');
+        apiScript.src = 'https://www.youtube.com/iframe_api';
+        apiScript.async = true;
+        apiScript.onerror = () => showVideoError('Impossibile caricare l’API YouTube. Controlla la connessione o eventuali blocchi del browser.');
+        document.head.appendChild(apiScript);
+
+        // Mostra un fallback se il player non arriva mai a riprodurre.
+        window.setTimeout(() => {
+          if (!playbackStarted && !youtubeFailed) {
+            showVideoError('Il video non ha iniziato la riproduzione. Controlla la connessione o aprilo direttamente su YouTube.');
+          }
+        }, 12000);
+      }
+
+      const keywordInput = document.getElementById('keyword');
+      const countdownText = document.getElementById('countdown');
+      const exitButton = document.getElementById('exitButton');
+      const statusText = document.getElementById('status');
+
+      let secondsLeft = 30;
+      let timerExpired = false;
+      let exitByButton = false;
+
+      const keywordIsCorrect = () => keywordInput.value.trim().toLowerCase() === 'rickroll';
+
+      function updateUnlockState() {
+        // Sblocco richiesto: timer terminato OPPURE parola chiave corretta.
+        const unlocked = timerExpired || keywordIsCorrect();
+        exitButton.disabled = !unlocked;
+
+        if (unlocked) {
+          statusText.textContent = 'Pulsante sbloccato.';
+        } else {
+          statusText.textContent = '';
+        }
+      }
+
+      keywordInput.addEventListener('input', updateUnlockState);
+
+      const countdownInterval = window.setInterval(() => {
+        if (secondsLeft > 0) secondsLeft -= 1;
+        countdownText.textContent = `Puoi uscire tra: ${secondsLeft} second${secondsLeft === 1 ? 'o' : 'i'}`;
+
+        if (secondsLeft <= 0) {
+          timerExpired = true;
+          window.clearInterval(countdownInterval);
+        }
+        updateUnlockState();
+      }, 1000);
+
+      exitButton.addEventListener('click', () => {
+        if (exitButton.disabled) return;
+        exitByButton = true;
+        window.location.href = 'https://www.google.com/';
+      });
+
+      // I browser moderni mostrano il proprio avviso standard: la pagina non può
+      // impedire in modo assoluto all'utente di chiudere la scheda.
+      window.addEventListener('beforeunload', (event) => {
+        if (exitByButton) return;
+
+        // Avviso finché timer e parola chiave non sono entrambi completati.
+        if (!timerExpired || !keywordIsCorrect()) {
+          event.preventDefault();
+          event.returnValue = '';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
